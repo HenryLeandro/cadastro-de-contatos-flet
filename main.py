@@ -3,61 +3,123 @@ import json
 import os
 
 ARQ = "dados.json"
-contatos = json.load(open(ARQ, encoding="utf-8")) if os.path.exists(ARQ) else []
+
+if os.path.exists(ARQ):
+    with open(ARQ, "r", encoding="utf-8") as arquivo:
+        contatos = json.load(arquivo)
+else:
+    contatos = []
 
 
 def salvar():
-    json.dump(contatos, open(ARQ, "w", encoding="utf-8"), ensure_ascii=False, indent=4)
+    with open(ARQ, "w", encoding="utf-8") as arquivo:
+        json.dump(
+            contatos,
+            arquivo,
+            ensure_ascii=False,
+            indent=4
+        )
 
 
 def main(page: ft.Page):
-    nome = ft.TextField(label="Nome")
-    tel = ft.TextField(label="Telefone")
+    page.title = "Cadastro de Contatos"
+
+    nome = ft.TextField(
+        label="Nome",
+        width=400
+    )
+
+    tel = ft.TextField(
+        label="Telefone",
+        width=400
+    )
+
     lista = ft.Column()
+
     editando = -1
 
     def atualizar():
         lista.controls.clear()
-        for i, c in enumerate(contatos):
-            lista.controls.append(ft.Row([
-                ft.Text(c["nome"] + " - " + c["tel"]),
-                ft.IconButton(ft.Icons.EDIT, data=i, on_click=editar),
-                ft.IconButton(ft.Icons.DELETE, data=i, on_click=excluir),
-            ]))
-        page.update()
+
+        for i, contato in enumerate(contatos):
+            lista.controls.append(
+                ft.Row(
+                    controls=[
+                        ft.Text(
+                            f"{contato['nome']} - {contato['tel']}",
+                            expand=True
+                        ),
+                        ft.IconButton(
+                            icon=ft.Icons.EDIT,
+                            data=i,
+                            on_click=editar
+                        ),
+                        ft.IconButton(
+                            icon=ft.Icons.DELETE,
+                            data=i,
+                            on_click=excluir
+                        ),
+                    ]
+                )
+            )
 
     def salvar_clique(e):
         nonlocal editando
+
         if not nome.value:
             return
-        c = {"nome": nome.value, "tel": tel.value}
+
+        contato = {
+            "nome": nome.value,
+            "tel": tel.value
+        }
+
         if editando == -1:
-            contatos.append(c)
+            contatos.append(contato)
         else:
-            contatos[editando] = c
+            contatos[editando] = contato
             editando = -1
-            botao.text = "Adicionar"
-        nome.value = tel.value = ""
+            botao.content = "Adicionar"
+
+        nome.value = ""
+        tel.value = ""
+
         salvar()
         atualizar()
-        page.update()
 
     def editar(e):
         nonlocal editando
+
         editando = e.control.data
+
         nome.value = contatos[editando]["nome"]
         tel.value = contatos[editando]["tel"]
-        botao.text = "Salvar"
-        page.update()
+
+        botao.content = "Salvar"
 
     def excluir(e):
-        contatos.pop(e.control.data)
+        indice = e.control.data
+
+        contatos.pop(indice)
+
         salvar()
         atualizar()
 
-    botao = ft.ElevatedButton("Adicionar", on_click=salvar_clique)
-    page.add(ft.Text("Cadastro de Contatos", size=22), nome, tel, botao, lista)
+    botao = ft.Button(
+        content="Adicionar",
+        on_click=salvar_clique
+    )
+
+    page.add(
+        ft.Text("Cadastro de Contatos", size=22),
+        nome,
+        tel,
+        botao,
+        lista
+    )
+
     atualizar()
 
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.run(main)
